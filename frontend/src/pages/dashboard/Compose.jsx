@@ -552,7 +552,8 @@ export default function Compose() {
       const response = await api.post('/email/send', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
-        }
+        },
+        timeout: 120000,
       });
       
       if (response.data.success) {

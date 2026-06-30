@@ -13,6 +13,14 @@ const { analyzeAttachments } = require('./attachmentAnalysis');
 const PHISHING_MODEL = 'onnx-community/bert-finetuned-phishing-ONNX';
 const SPAM_MODEL = 'onnx-community/tanaos-spam-detection-v1-ONNX';
 
+/** ML models need ~1–2 GB RAM. Railway free tier OOMs — auto-disable there. */
+function shouldUseMlModels() {
+  if (process.env.AI_USE_ML_MODELS === 'true') return true;
+  if (process.env.AI_USE_ML_MODELS === 'false') return false;
+  if (process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID) return false;
+  return true;
+}
+
 const PHISHING_THRESHOLD = 0.6;
 const SPAM_THRESHOLD = 0.6;
 const SUSPICIOUS_THRESHOLD = 0.35;
@@ -88,14 +96,17 @@ async function analyzeEmailAI({ subject = '', body = '', senderEmail = '', attac
   const sender = analyzeSender(senderEmail);
 
   let content = { phishing: 0, spam: 0 };
-  let source = 'ai-model';
-  if (text) {
+  let source = 'multi-signal-light';
+  if (text && shouldUseMlModels()) {
+    source = 'ai-model';
     try {
       content = await runContentModels(text);
     } catch (err) {
       console.error('[AI] Content models unavailable, using links/files only:', err.message);
       source = 'heuristic-fallback';
     }
+  } else if (text) {
+    console.log('[AI] ML models skipped (cloud/light mode) — using link, attachment, and sender analysis');
   }
 
   const contentRisk = Math.max(content.phishing, content.spam * 0.9);
@@ -152,6 +163,8 @@ async function analyzeEmailAI({ subject = '', body = '', senderEmail = '', attac
     } else {
       reasons.push('Content language looks legitimate');
     }
+  } else if (source === 'multi-signal-light') {
+    reasons.push('Analyzed links, attachments, and sender domain (optimized for cloud hosting)');
   }
   url.links.forEach((l) => {
     if (l.risk !== 'low') reasons.push(`Link: ${l.reason}`);
