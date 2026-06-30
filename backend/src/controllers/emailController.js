@@ -629,8 +629,7 @@ const sendEmail = async (req, res) => {
       sentEmail.deliveredAt = new Date();
       await sentEmail.save();
     } else if (externalRecipientCount > 0) {
-      // Has external recipients - simulate delivery (in production, this would be handled by email service)
-      // For demo: randomly set status to delivered or failed after a delay
+      // Has external recipients — simulate delivery status update
       setTimeout(async () => {
         try {
           const email = await Email.findById(sentEmail._id);

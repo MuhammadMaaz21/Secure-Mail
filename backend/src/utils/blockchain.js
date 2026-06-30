@@ -187,7 +187,7 @@ const findBlockByEmailId = (emailId) => {
   });
 };
 
-// Verify email integrity (simplified and reliable for demonstration)
+// Verify email integrity against the ledger
 // Accepts object parameter: { emailId, senderId, recipientIds, timestamp, subject, bodyHash, body }
 const verifyEmail = ({ emailId, senderId, recipientIds, timestamp, subject, bodyHash, body }) => {
   // First, try to find block by emailId
@@ -228,8 +228,7 @@ const verifyEmail = ({ emailId, senderId, recipientIds, timestamp, subject, body
       bodyHashMatch = storedBodyHash === computedBodyHash;
     }
     
-    // For demonstration: if block exists, email is verified (lenient approach)
-    // Only fail if bodyHash explicitly doesn't match AND was provided
+    // If block exists, verify body hash when available
     const verified = bodyHashMatch;
     
       return {
@@ -242,14 +241,13 @@ const verifyEmail = ({ emailId, senderId, recipientIds, timestamp, subject, body
     };
   }
   
-  // No block found - for demonstration, still return verified (blockchain is for show)
   return {
-    verified: true,
+    verified: false,
     blockIndex: null,
     blockTimestamp: null,
     emailTimestamp: timestamp || new Date().toISOString(),
-    bodyHashMatch: true,
-    reason: 'Email verified successfully (blockchain demonstration)'
+    bodyHashMatch: false,
+    reason: 'No matching block found in ledger'
   };
 };
 
