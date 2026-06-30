@@ -36,7 +36,11 @@ export default function EmailViewer({ email }) {
   const handleDelete = async () => {
     if (!email || !email._id) return;
     
-    if (!window.confirm('Are you sure you want to delete this email? It will be moved to trash.')) {
+    if (!window.confirm(
+      email?.isDisposable
+        ? 'Delete this email received on your disposable address? It will move to trash.'
+        : 'Are you sure you want to delete this email? It will be moved to trash.'
+    )) {
       return;
     }
     
@@ -394,8 +398,12 @@ export default function EmailViewer({ email }) {
               </button>
                   <button
                     onClick={handleDelete}
-                    className="p-2 hover:bg-red-50 rounded-lg transition-all duration-200 text-gray-600 hover:text-red-600"
-                    title="Delete"
+                    className={`p-2 rounded-lg transition-all duration-200 ${
+                      email.isDisposable
+                        ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+                        : 'hover:bg-red-50 text-gray-600 hover:text-red-600'
+                    }`}
+                    title={email.isDisposable ? 'Delete disposable email' : 'Delete'}
                   >
                     <Trash2 size={18} />
                   </button>

@@ -1,8 +1,8 @@
 import React from 'react';
 import { formatTimestamp } from '../../utils/formatTimestamp';
-import { CheckCircle, Clock, XCircle, RotateCw, Shield, AlertTriangle, LockKeyhole, Timer } from 'lucide-react';
+import { CheckCircle, Clock, XCircle, RotateCw, Shield, AlertTriangle, LockKeyhole, Timer, Trash2 } from 'lucide-react';
 
-export default function EmailItem({ email, onClick, isSelected = false, folder = 'inbox', onRetry }) {
+export default function EmailItem({ email, onClick, isSelected = false, folder = 'inbox', onRetry, onDelete }) {
   // Handle both API format and dummy data format
   const isRead = email.isRead !== undefined ? !email.isRead : email.unread;
   const senderName = email.senderName || email.senderEmail || email.sender || 'Unknown';
@@ -31,6 +31,13 @@ export default function EmailItem({ email, onClick, isSelected = false, folder =
     e.stopPropagation(); // Prevent email selection
     if (onRetry) {
       onRetry(email);
+    }
+  };
+
+  const handleDeleteClick = (e) => {
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete(email);
     }
   };
 
@@ -113,6 +120,15 @@ export default function EmailItem({ email, onClick, isSelected = false, folder =
           <span className="text-xs text-textLight whitespace-nowrap flex-shrink-0">
             {formatTimestamp(timestamp)}
           </span>
+          {(email.isDisposable || folder === 'inbox') && onDelete && (
+            <button
+              onClick={handleDeleteClick}
+              className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+              title={email.isDisposable ? 'Delete disposable email' : 'Delete email'}
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
         </div>
         
         <div className="mb-1">

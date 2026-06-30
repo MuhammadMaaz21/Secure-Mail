@@ -176,6 +176,30 @@ export default function Inbox({ searchQuery: parentSearchQuery, setSearchQuery: 
     window.history.pushState({}, '', `/inbox/${email._id}`);
   };
 
+  const handleDeleteEmail = async (email) => {
+    if (!email?._id) return;
+    const label = email.isDisposable ? 'disposable email' : 'email';
+    if (!window.confirm(`Delete this ${label}? It will be moved to trash.`)) return;
+
+    try {
+      const response = await api.delete(`/email/${email._id}`);
+      if (response.data.success) {
+        toast.success('Email moved to trash');
+        if (selectedEmail?._id === email._id) {
+          setSelectedEmail(null);
+          navigate('/inbox');
+        }
+        refreshEmails();
+        window.dispatchEvent(new Event('refreshInbox'));
+      } else {
+        throw new Error(response.data.message || 'Failed to delete email');
+      }
+    } catch (error) {
+      console.error('Error deleting email:', error);
+      toast.error(error.response?.data?.message || error.message || 'Failed to delete email');
+    }
+  };
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="flex-shrink-0 mb-4">
@@ -214,6 +238,7 @@ export default function Inbox({ searchQuery: parentSearchQuery, setSearchQuery: 
             filter={filter}
             searchQuery={debouncedSearchQuery}
             selectedEmailId={selectedEmail?._id}
+            onDelete={handleDeleteEmail}
           />
           {/* Pagination */}
           {totalPages > 1 && (

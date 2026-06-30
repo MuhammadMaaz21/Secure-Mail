@@ -70,15 +70,12 @@ router.get('/attachment/:emailId/:attachmentIndex', authenticate, async (req, re
       return res.status(404).json({ success: false, message: 'Email not found' });
     }
     
-    // Check if user has access to this email
-    const userId = req.userId.toString();
-    const userEmail = req.user.email.toLowerCase();
-    const isSender = email.senderId.toString() === userId;
-    const isRecipient = email.to.includes(userEmail) || 
-                       email.cc.includes(userEmail) || 
-                       email.bcc.includes(userEmail);
-    
-    if (!isSender && !isRecipient) {
+    const { userCanAccessEmail } = require('../utils/emailUtils');
+    const userId = req.userId;
+    const userEmail = req.user.email;
+    const hasAccess = await userCanAccessEmail(email, userId, userEmail);
+
+    if (!hasAccess) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
     

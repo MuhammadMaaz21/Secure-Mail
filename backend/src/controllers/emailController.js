@@ -8,6 +8,7 @@ const { isTemporaryEmail, incrementTempEmailUsage } = require('../controllers/pr
 const TemporaryEmail = require('../models/TemporaryEmail');
 const { encryptEmailContent, decryptEmailContent } = require('../utils/encryption');
 const { sanitizeHtml, sanitizeText } = require('../utils/sanitize');
+const { userCanAccessEmail, userIsRecipient, buildRecipientAccessOr } = require('../utils/emailUtils');
 
 function buildStoredAiAnalysis(ai) {
   return {
@@ -742,15 +743,13 @@ const getEmails = async (req, res) => {
         ] // Exclude soft-deleted emails
       };
     } else if (folder === 'trash') {
-      // Trash folder: show soft-deleted emails
+      const recipientConditions = await buildRecipientAccessOr(userId, userEmail);
       query = {
         $or: [
           { senderId: userId },
-          { to: userEmail.toLowerCase() },
-          { cc: userEmail.toLowerCase() },
-          { bcc: userEmail.toLowerCase() }
+          ...recipientConditions,
         ],
-        deletedAt: { $ne: null }
+        deletedAt: { $ne: null },
       };
     } else {
       // Inbox, spam: emails where user is a recipient (exclude soft-deleted)
@@ -960,13 +959,10 @@ const getEmailById = async (req, res) => {
       });
     }
     
-    // Check if user has access to this email
-    const isSender = email.senderId.toString() === userId.toString();
-    const isRecipient = email.to.includes(userEmail.toLowerCase()) ||
-                       email.cc.includes(userEmail.toLowerCase()) ||
-                       email.bcc.includes(userEmail.toLowerCase());
-    
-    if (!isSender && !isRecipient) {
+    // Check if user has access to this email (includes disposable/temp addresses)
+    const hasAccess = await userCanAccessEmail(email, userId, userEmail);
+
+    if (!hasAccess) {
       return res.status(403).json({
         success: false,
         error: 'Forbidden',
@@ -1105,13 +1101,9 @@ const deleteEmail = async (req, res) => {
       });
     }
 
-    // Check if user has access to this email
-    const isSender = email.senderId.toString() === userId.toString();
-    const isRecipient = email.to.includes(userEmail.toLowerCase()) ||
-                       email.cc.includes(userEmail.toLowerCase()) ||
-                       email.bcc.includes(userEmail.toLowerCase());
+    const hasAccess = await userCanAccessEmail(email, userId, userEmail);
 
-    if (!isSender && !isRecipient) {
+    if (!hasAccess) {
       return res.status(403).json({
         success: false,
         error: 'Forbidden',
@@ -1164,10 +1156,7 @@ const markAsSpam = async (req, res) => {
       });
     }
 
-    // Check if user is a recipient (only recipients can mark as spam)
-    const isRecipient = email.to.includes(userEmail.toLowerCase()) ||
-                       email.cc.includes(userEmail.toLowerCase()) ||
-                       email.bcc.includes(userEmail.toLowerCase());
+    const isRecipient = await userIsRecipient(email, userId, userEmail);
 
     if (!isRecipient) {
       return res.status(403).json({
@@ -1222,13 +1211,9 @@ const markAsImportant = async (req, res) => {
       });
     }
 
-    // Check if user is a recipient or sender (both can mark as important)
-    const isRecipient = email.to.includes(userEmail.toLowerCase()) ||
-                       email.cc.includes(userEmail.toLowerCase()) ||
-                       email.bcc.includes(userEmail.toLowerCase());
-    const isSender = email.senderId.toString() === userId.toString();
+    const hasAccess = await userCanAccessEmail(email, userId, userEmail);
 
-    if (!isRecipient && !isSender) {
+    if (!hasAccess) {
       return res.status(403).json({
         success: false,
         error: 'Forbidden',
@@ -1537,15 +1522,13 @@ const getTrash = async (req, res) => {
     const userSettings = await UserSettings.findOne({ userId });
     const blockedSenders = userSettings?.blockedSenders || [];
 
-    // Query for soft-deleted emails accessible by user
+    const recipientConditions = await buildRecipientAccessOr(userId, userEmail);
     const query = {
       $or: [
         { senderId: userId },
-        { to: userEmail.toLowerCase() },
-        { cc: userEmail.toLowerCase() },
-        { bcc: userEmail.toLowerCase() }
+        ...recipientConditions,
       ],
-      deletedAt: { $ne: null }
+      deletedAt: { $ne: null },
     };
 
     // Pagination
@@ -1610,13 +1593,9 @@ const restoreEmail = async (req, res) => {
       });
     }
 
-    // Check if user has access to this email
-    const isSender = email.senderId.toString() === userId.toString();
-    const isRecipient = email.to.includes(userEmail.toLowerCase()) ||
-                       email.cc.includes(userEmail.toLowerCase()) ||
-                       email.bcc.includes(userEmail.toLowerCase());
+    const hasAccess = await userCanAccessEmail(email, userId, userEmail);
 
-    if (!isSender && !isRecipient) {
+    if (!hasAccess) {
       return res.status(403).json({
         success: false,
         error: 'Forbidden',
@@ -1676,13 +1655,9 @@ const permanentDeleteEmail = async (req, res) => {
       });
     }
 
-    // Check if user has access to this email
-    const isSender = email.senderId.toString() === userId.toString();
-    const isRecipient = email.to.includes(userEmail.toLowerCase()) ||
-                       email.cc.includes(userEmail.toLowerCase()) ||
-                       email.bcc.includes(userEmail.toLowerCase());
+    const hasAccess = await userCanAccessEmail(email, userId, userEmail);
 
-    if (!isSender && !isRecipient) {
+    if (!hasAccess) {
       return res.status(403).json({
         success: false,
         error: 'Forbidden',
@@ -1728,13 +1703,9 @@ const verifyEmail = async (req, res) => {
       });
     }
     
-    // Check if user has access to this email
-    const isSender = email.senderId.toString() === userId.toString();
-    const isRecipient = email.to.includes(userEmail.toLowerCase()) ||
-                       email.cc.includes(userEmail.toLowerCase()) ||
-                       email.bcc.includes(userEmail.toLowerCase());
-    
-    if (!isSender && !isRecipient) {
+    const hasAccess = await userCanAccessEmail(email, userId, userEmail);
+
+    if (!hasAccess) {
       return res.status(403).json({
         success: false,
         error: 'Forbidden',

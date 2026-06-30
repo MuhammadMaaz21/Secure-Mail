@@ -9,7 +9,8 @@ export default function EmailList({
   searchQuery = '', 
   selectedEmailId = null,
   folder = 'inbox',
-  onRetry
+  onRetry,
+  onDelete,
 }) {
 
   const handleEmailClick = (email) => {
@@ -77,6 +78,7 @@ export default function EmailList({
                 isSelected={selectedEmailId === email._id}
                 folder={folder}
                 onRetry={onRetry}
+                onDelete={onDelete}
               />
             ))
           ) : (
