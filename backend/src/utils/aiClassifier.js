@@ -13,10 +13,11 @@ const { analyzeAttachments } = require('./attachmentAnalysis');
 const PHISHING_MODEL = 'onnx-community/bert-finetuned-phishing-ONNX';
 const SPAM_MODEL = 'onnx-community/tanaos-spam-detection-v1-ONNX';
 
-/** ML models need ~1–2 GB RAM. Railway free tier OOMs — auto-disable there. */
+/** ML models need ~1–2 GB RAM. Disabled in production/cloud to prevent OOM crashes. */
 function shouldUseMlModels() {
   if (process.env.AI_USE_ML_MODELS === 'true') return true;
   if (process.env.AI_USE_ML_MODELS === 'false') return false;
+  if (process.env.NODE_ENV === 'production') return false;
   if (process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID) return false;
   return true;
 }
