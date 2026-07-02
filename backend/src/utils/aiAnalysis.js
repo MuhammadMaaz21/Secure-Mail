@@ -200,7 +200,7 @@ const analyzeEmail = (emailData) => {
   let threatLevel = 'safe';
   if (isPhishing) {
     threatLevel = 'phishing';
-  } else if (spamProbability >= 50) {
+  } else if (spamProbability >= 40) {
     threatLevel = 'spam';
   } else if (spamProbability >= 30) {
     threatLevel = 'suspicious';
@@ -211,7 +211,7 @@ const analyzeEmail = (emailData) => {
   if (isPhishing) {
     details.push('Phishing indicators detected: suspicious sender domain and verification requests');
   }
-  if (spamProbability >= 50) {
+  if (spamProbability >= 40) {
     details.push(`High spam probability (${spamProbability}%): multiple spam keywords detected`);
   } else if (spamProbability >= 30) {
     details.push(`Moderate spam indicators (${spamProbability}%)`);

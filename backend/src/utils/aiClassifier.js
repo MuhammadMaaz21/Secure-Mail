@@ -23,8 +23,8 @@ function shouldUseMlModels() {
 }
 
 const PHISHING_THRESHOLD = 0.6;
-const SPAM_THRESHOLD = 0.6;
-const SUSPICIOUS_THRESHOLD = 0.35;
+const SPAM_THRESHOLD = 0.4;
+const SUSPICIOUS_THRESHOLD = 0.3;
 
 const importantKeywords = [
   'meeting', 'invoice', 'deadline', 'urgent', 'important', 'payment', 'contract',
